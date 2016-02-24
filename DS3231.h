@@ -29,17 +29,22 @@
  *	useful reference https://github.com/vancegroup-mirrors/avr-libc/blob/master/avr-libc/include/time.h
  *
  */
-
+#define DS3231_STATUSREG 0x0F
 class DS3231 : public TWI{
 private:
 	time_t system_time;
+	uint8_t address;
+	//static uint8_t bind2bcd(uint8_t val);
+	uint8_t read_i2c_register(uint8_t addr, uint8_t reg);
+	void write_i2c_register(uint8_t addr, uint8_t reg, uint8_t val);
 
+//TODO: change get/set time to pointers
 public:
 	DS3231();
-	DS3231(TWI_Data * twi_data);
-	DS3231(TWI_Data * twi_data, bool high_update_frequency);
-	void setTime(struct tm time);
-	struct tm getTime();
+	DS3231(TWI_Data * twi_data, uint8_t address);
+	DS3231(TWI_Data * twi_data, uint8_t address, bool high_update_frequency);
+	void setTime(struct tm * time);
+	struct tm * getTime();
 	virtual ~DS3231();
 };
 

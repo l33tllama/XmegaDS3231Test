@@ -4,10 +4,13 @@
 
 #include "USART.h"
 #include "USART_Debug.h"
+#include "DS3231.h"
 
 
 USART_Data c0d;
 USART C0;
+TWI_Data twi_d;
+DS3231 rtc;
 
 void initClocks(){
 	OSC.CTRL |= OSC_RC32MEN_bm | OSC_RC32KEN_bm;  /* Enable the internal 32MHz & 32KHz oscillators */
@@ -27,7 +30,40 @@ void setupUSART(){
 	c0d.txPin = PIN3_bm;
 
 	C0 = USART(&c0d, false);
+}
 
+void setupTWI(uint8_t address){
+	/*
+	 * rtcData.baud_hz = 400000L;
+	rtcData.master_addr = 0x00;
+	rtcData.maxDataLength = 64;
+	rtcData.port = 0x00;
+	rtcData.twi_port = &TWIE;
+	 */
+	twi_d.baud_hz = 400000L;
+	twi_d.master_addr = 0x00;
+	twi_d.maxDataLength = 64;
+	twi_d.port = &PORTE;
+	twi_d.twi_port = &TWIE;
+
+	rtc = DS3231(&twi_d, address);
+}
+
+void pollBus(TWI * t){
+	register8_t * i2cAddresses;
+	i2cAddresses = t->pollBus();
+
+	char i2c_data[64];//
+	for(int i = 0; i < 127; i++){
+		if (i == 127){
+			printf("%x\n", i2cAddresses[i]);
+		}
+		if (i % 25 == 0){
+			printf("\n");
+		}
+		printf("%x, ", i2cAddresses[i]);
+
+	}
 }
 
 void restartInterrupts(){
@@ -43,15 +79,45 @@ int main(){
 	setDebugOutputPort(&USARTC0);
 	PORTB.DIR  = 0b1111;
 	uint8_t out = 0x01;
-	int i = 0;
+
+	printf("\nPROGRAM BEGIN..\n\n");
+	PORTE.DIR = 0x03;
+
+	_delay_ms(1000);
+
+	setupTWI(0x68);
+	//pollBus(&rtc);
+
+	printf("Setting time..");
+	struct tm time;
+	time.tm_year = 2016;
+	time.tm_mon = 2;
+	time.tm_mday = 24;
+	time.tm_hour = 14;
+	time.tm_min = 39;
+	time.tm_sec = 55;
+	rtc.setTime(&time);
+
+	struct tm time_rcv = *rtc.getTime();
+
+	printf("%d/%d/%d %d:%d::%d\n", time_rcv.tm_mday,
+			time_rcv.tm_mon, time_rcv.tm_year,
+			time_rcv.tm_hour, time_rcv.tm_min, time_rcv.tm_sec);
+
+	// LED looping test
 	while(1){
-		printf("Oh hi. %d\n", i++);
+		//printf("Oh hi. %d\n", i++);
 		PORTB.OUT = out;
 		out  = (out << 1);
 				if(out == 0b10000){
 					out = 0x01;
 				}
-		_delay_ms(500);
+		_delay_ms(1000);
+		time_rcv = *rtc.getTime();
+
+		printf("%02d/%02d/%02d %02d:%02d::%02d\n", time_rcv.tm_mday,
+				time_rcv.tm_mon, time_rcv.tm_year,
+				time_rcv.tm_hour, time_rcv.tm_min, time_rcv.tm_sec);
 	}
 	return 0;
 }

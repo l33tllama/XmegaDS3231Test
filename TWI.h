@@ -8,6 +8,7 @@
 #ifndef TWI_H_
 #define TWI_H_
 #define F_CPU 3200000
+#define TWI_TIMEOUT 1000
 #include <avr/io.h>
 
 /*! Transaction result enumeration. */
@@ -50,8 +51,10 @@ private:
 public:
 	TWI();
 	TWI(TWI_Data * twi_data);
+	TWIM_STATUS_t getTWIMStatus();
 	void beginWrite(register8_t address);
 	void beginRead(register8_t address);
+	char beginReadFirstByte(register8_t address);
 	void putChar(char c);
 	char getChar();
 	void endTransmission();
