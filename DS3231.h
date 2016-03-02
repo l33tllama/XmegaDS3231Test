@@ -30,13 +30,23 @@
  *
  */
 #define DS3231_STATUSREG 0x0F
+
+enum WMDay { weekDay, dayOfMonth };
+
+typedef struct AlarmData{
+	struct tm time;
+	WMDay wm;
+} alarmData;
+
 class DS3231 : public TWI{
 private:
 	time_t system_time;
+	struct tm sys_time_strc;
 	uint8_t address;
 	//static uint8_t bind2bcd(uint8_t val);
 	uint8_t read_i2c_register(uint8_t addr, uint8_t reg);
 	void write_i2c_register(uint8_t addr, uint8_t reg, uint8_t val);
+
 
 //TODO: change get/set time to pointers
 public:
@@ -45,6 +55,8 @@ public:
 	DS3231(TWI_Data * twi_data, uint8_t address, bool high_update_frequency);
 	void setTime(struct tm * time);
 	struct tm * getTime();
+	void setAlarmInterval(struct tm * time, WMDay wm);
+	void setAlarmDate(struct tm * time);
 	virtual ~DS3231();
 };
 

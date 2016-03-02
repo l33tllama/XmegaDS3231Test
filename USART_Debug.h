@@ -17,6 +17,4 @@ extern "C"{
 	void setDebugOutputPort(USART_t * port);
 }
 
-
-
 #endif /* USART_DEBUG_H_ */

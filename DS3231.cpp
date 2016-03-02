@@ -11,11 +11,12 @@
 #include <util/delay.h>
 
 DS3231::DS3231() : TWI() {
-	system_time = NULL;
+	system_time = 0;
+	address = 0x00;
 }
 
 DS3231::DS3231(TWI_Data * twi_d, uint8_t address) : TWI(twi_d){
-	system_time = NULL;
+	system_time = 0;
 	this->address = address;
 }
 
@@ -88,30 +89,100 @@ void DS3231::setTime(struct tm * time){
 	printf("Done.\n");
 }
 
+/* Sets the interval for alarm 1 */
+void DS3231::setAlarmInterval(struct tm * time, WMDay wm){
+
+	uint8_t seconds = bind2bcd(time->tm_sec);
+	uint8_t minutes = bind2bcd(time->tm_min);
+	uint8_t hours = bind2bcd(time->tm_hour);
+	uint8_t wmday = (wm == weekDay) ? bind2bcd(time->tm_wday) : bind2bcd(time->tm_mday);
+
+	// Every second
+	if(time->tm_sec == 1){
+		if(time->tm_min == 0 && time->tm_hour == 0 &&
+				time->tm_wday){
+			seconds |= _BV(7);
+			minutes |= _BV(7);
+			hours |= _BV(7);
+			wmday |= (wm == weekDay) ? _BV(7) : _BV(6) + _BV(7);
+		}
+	}
+
+	 /* Every few seconds */
+	else if(time->tm_min == 0 && time->tm_hour == 0 &&
+			time->tm_wday == 0){
+		minutes |= _BV(7);
+		hours |= _BV(7);
+		wmday |= (wm == weekDay) ? _BV(7) : _BV(6) + _BV(7);
+	}
+
+	/* When minutes and second match */
+	else if (time->tm_hour == 0 && time->tm_wday == 0){
+		hours |= _BV(7);
+		wmday |= (wm == weekDay) ? _BV(7) : _BV(6) + _BV(7);
+	}
+
+	/* When hours, minutes and seconds match */
+	else if((wm == weekDay && time->tm_wday == 0) ||
+			(wm == dayOfMonth && time->tm_mday == 0)){
+		wmday |= (wm == weekDay) ? _BV(7) : _BV(6) + _BV(7);
+	}
+
+	/* Specific time (D/H/M/S != 0) */
+	else {
+		// set dy/dt (weekday / day of month)
+		wmday |= (wm == weekDay) ? 0 : _BV(6);
+	}
+
+	// Write alarm time to RTC (starting at alarm 1 address 0x07
+	uint8_t alarm1_addr = 0x07;
+	beginWrite(address);
+	putChar(alarm1_addr++);
+	putChar(seconds);
+	endTransmission();
+
+	beginWrite(address);
+	putchar(alarm1_addr++);
+	putChar(minutes);
+	endTransmission();
+
+	beginWrite(address);
+	putChar(alarm1_addr++);
+	putChar(hours);
+	endTransmission();
+
+	beginWrite(address);
+	putChar(alarm1_addr);
+	putChar(wmday);
+	endTransmission();
+
+}
+
 struct tm * DS3231::getTime(){
 	printf("Sending the command to get the time. \n");
 	beginWrite(address);
 	putChar(0b0000);
 	endTransmission();
 
-	struct tm time;
-
 	printf("Getting time now..\n");
-	time.tm_sec = bcd2bin(beginReadFirstByte(address) & 0x7F);
-	//time.tm_sec = bcd2bin((uint8_t)getChar() & 0x7F);
-	time.tm_min = bcd2bin((uint8_t)getChar());
-	time.tm_hour = bcd2bin((uint8_t)getChar());
-	uint16_t tmp = 0;
+	sys_time_strc.tm_sec = bcd2bin(beginReadFirstByte(address) & 0x7F);
+	sys_time_strc.tm_min = bcd2bin((uint8_t)getChar());
+	sys_time_strc.tm_hour = bcd2bin((uint8_t)getChar());
 	getChar();
-	time.tm_mday = bcd2bin((uint8_t)getChar());
-	time.tm_mon = bcd2bin((uint8_t)getChar());
-	time.tm_year = bcd2bin((uint16_t)getChar()) + 2000;
-	printf("Order:\ns:\t%d\nmin:\t%d\nh:\t%d\n?:\t%d\nd:\t%d\nmon:\t%d\ny:\t%d\n",
-			time.tm_sec, time.tm_min, time.tm_hour, tmp,
-			time.tm_mday, time.tm_mon, time.tm_year);
+	sys_time_strc.tm_mday = bcd2bin((uint8_t)getChar());
+	sys_time_strc.tm_mon = bcd2bin((uint8_t)getChar());
+	sys_time_strc.tm_year = bcd2bin((uint16_t)getChar()) + 2000;
+	printf("Order:\ns:\t%d\nmin:\t%d\nh:\t%d\nd:\t%d\nmon:\t%d\ny:\t%d\n",
+			sys_time_strc.tm_sec, sys_time_strc.tm_min, sys_time_strc.tm_hour,
+			sys_time_strc.tm_mday, sys_time_strc.tm_mon, sys_time_strc.tm_year);
 	endTransmission();
+
 	printf("Done.\n");
-	return &time;
+	return &sys_time_strc;
+}
+
+void setAlarm(){
+
 }
 
 DS3231::~DS3231() {

@@ -54,7 +54,7 @@ void pollBus(TWI * t){
 	i2cAddresses = t->pollBus();
 
 	char i2c_data[64];//
-	for(int i = 0; i < 127; i++){
+	for(uint8_t i = 0; i < 127; i++){
 		if (i == 127){
 			printf("%x\n", i2cAddresses[i]);
 		}
@@ -72,31 +72,47 @@ void restartInterrupts(){
 	sei();
 }
 
+// Temporary time setting function (move to cmd config class)
+void setDate(DS3231 * rtc){
+	printf("Setting time..\n");
+	struct tm time;
+	time.tm_year = 2016;
+	time.tm_mon = 3;
+	time.tm_mday = 2;
+	time.tm_hour = 14;
+	time.tm_min = 15;
+	time.tm_sec = 55;
+	rtc->setTime(&time);
+}
+
+// Temp. alarm setting function
+void setAlarm(DS3231 * rtc){
+	printf("Setting alarm.\n");
+	struct tm time;
+	time.tm_mday = 0;
+	time.tm_hour = 0;
+	time.tm_min = 0;
+	time.tm_sec = 5;
+	rtc->setAlarmInterval(&time, weekDay);
+}
+
 int main(){
 	initClocks();
 	restartInterrupts();
 	setupUSART();
 	setDebugOutputPort(&USARTC0);
 	PORTB.DIR  = 0b1111;
-	uint8_t out = 0x01;
-
-	printf("\nPROGRAM BEGIN..\n\n");
 	PORTE.DIR = 0x03;
 
-	_delay_ms(1000);
 
+	printf("\nPROGRAM BEGIN..\n\n");
+
+	_delay_ms(200);
 	setupTWI(0x68);
+	setAlarm(&rtc);
 	//pollBus(&rtc);
 
-	printf("Setting time..");
-	struct tm time;
-	time.tm_year = 2016;
-	time.tm_mon = 2;
-	time.tm_mday = 24;
-	time.tm_hour = 14;
-	time.tm_min = 39;
-	time.tm_sec = 55;
-	rtc.setTime(&time);
+	setDate(&rtc);
 
 	struct tm time_rcv = *rtc.getTime();
 
@@ -104,6 +120,7 @@ int main(){
 			time_rcv.tm_mon, time_rcv.tm_year,
 			time_rcv.tm_hour, time_rcv.tm_min, time_rcv.tm_sec);
 
+	uint8_t out = 0x01;
 	// LED looping test
 	while(1){
 		//printf("Oh hi. %d\n", i++);
