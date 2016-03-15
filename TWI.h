@@ -7,7 +7,7 @@
 
 #ifndef TWI_H_
 #define TWI_H_
-#define F_CPU 3200000
+//#define F_CPU 3200000
 #define TWI_TIMEOUT 1000
 #include <avr/io.h>
 
@@ -32,7 +32,7 @@ typedef enum TWIM_STATUS_enum {
 typedef struct TWI_Data_struct{
 	TWI_t * twi_port;
 	PORT_t * port;
-	unsigned int baud_hz;
+	unsigned long baud_hz;
 	uint8_t maxDataLength;
 	register8_t master_addr;
 	register8_t result;

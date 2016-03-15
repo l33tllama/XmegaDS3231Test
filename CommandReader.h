@@ -10,18 +10,21 @@
 #include <stdio.h>
 #include "DS3231.h"
 
+#define HELP "HELP"
+#define SETDT "SETDT"
+#define SETALRM "SETALRM"
+#define EXIT "EXIT"
+
 class CommandReader {
 private:
-	const char * help = "HELP";
-	const char * setDate = "SETDT";
-	const char * setAlarm = "SETALRM";
-	const char * exit = "EXIT";
 	bool entered_config;
+	bool running;
+	DS3231 * rtc;
 public:
-	CommandReader();
-	void setDateTimeInput(DS3231 * rtc);
-	void setAlarmInput(DS3231 * rtc);
-	bool mainLoop(DS3231 * rtc);
+	CommandReader(DS3231 * rtc);
+	void setDateTimeInput();
+	void setAlarmInput();
+	void mainLoop();
 	virtual ~CommandReader();
 };
 

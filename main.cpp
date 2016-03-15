@@ -5,12 +5,14 @@
 #include "USART.h"
 #include "USART_Debug.h"
 #include "DS3231.h"
+#include "CommandReader.h"
 
 
 USART_Data c0d;
 USART C0;
 TWI_Data twi_d;
 DS3231 rtc;
+CommandReader cmdReader(&rtc);
 
 void initClocks(){
 	OSC.CTRL |= OSC_RC32MEN_bm | OSC_RC32KEN_bm;  /* Enable the internal 32MHz & 32KHz oscillators */
@@ -53,7 +55,7 @@ void pollBus(TWI * t){
 	register8_t * i2cAddresses;
 	i2cAddresses = t->pollBus();
 
-	char i2c_data[64];//
+	//char i2c_data[64];//
 	for(uint8_t i = 0; i < 127; i++){
 		if (i == 127){
 			printf("%x\n", i2cAddresses[i]);
@@ -101,24 +103,29 @@ int main(){
 	restartInterrupts();
 	setupUSART();
 	setDebugOutputPort(&USARTC0);
+
 	PORTB.DIR  = 0b1111;
 	PORTE.DIR = 0x03;
-
 
 	printf("\nPROGRAM BEGIN..\n\n");
 
 	_delay_ms(200);
 	setupTWI(0x68);
-	setAlarm(&rtc);
+	//cmdReader = CommandReader(&rtc);
+	//setAlarm(&rtc);
 	//pollBus(&rtc);
 
-	setDate(&rtc);
+	//setDate(&rtc);
 
+	// startup commands - set time, alarm, etc
+	cmdReader.mainLoop();
+
+	// get the current time
 	struct tm time_rcv = *rtc.getTime();
-
 	printf("%d/%d/%d %d:%d::%d\n", time_rcv.tm_mday,
 			time_rcv.tm_mon, time_rcv.tm_year,
 			time_rcv.tm_hour, time_rcv.tm_min, time_rcv.tm_sec);
+
 
 	uint8_t out = 0x01;
 	// LED looping test

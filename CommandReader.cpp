@@ -8,8 +8,10 @@
 #include "CommandReader.h"
 #include <string.h>
 
-CommandReader::CommandReader() {
+CommandReader::CommandReader(DS3231 * rtc) {
 	entered_config = false;
+	running = false;
+	this->rtc = rtc;
 }
 /*
 char *next_token( char *str, const char *tok )
@@ -31,68 +33,97 @@ bool sanity_check_int(char * str, uint8_t len){
 	return true;
 }
 
-void CommandReader::setDateTimeInput(DS3231 * rtc){
-	char dateyn[3];
-	printf("Set date? [Y/n]\n");
-	scanf("%s", dateyn);
-	if(! (strcmp(dateyn, "n") == 0 || strcmp(dateyn, "N") == 0)){
-		printf("Enter date (format YYYY/MM/DD).\n");
+void CommandReader::setDateTimeInput(){
+	char yn[3];
+	// 00/00/0000 00:00:00
+	char * datetime;
+	scanf("%s", datetime);
 
-		char * yyyy;
-		char * mm;
-		char * dd;
-		char ymd_str[12] = {};
+	// if entered the correct amoun of digits including separating characters
+	if(strlen(datetime) == 19){
 
-		scanf("%s", ymd_str);
-
-		yyyy = strtok(ymd_str, "/");
+		// split string into relevant sections using strtok
+		char * yyyy, * mm, * dd, * hh, * m, * ss;
+		dd = strtok(datetime, "/");
 		mm = strtok(NULL, "/");
-		dd = strtok(NULL, "/");
+		yyyy = strtok(NULL, "/");
+		hh = strtok(NULL, " ");
+		m = strtok(NULL, ":");
+		ss = strtok(NULL, ":");
 
-		printf("Setting date: %s/%s/%s\n", yyyy, mm, dd );
-		if(sanity_check_int(yyyy, 4) && sanity_check_int(mm, 2) &&
-				sanity_check_int(dd, 2)){
-			printf("Date entered correctly.\n");
+		// sanity check strings to make sure they're ints (see if each char is an ASCII number)
+		bool dd_s, mm_s, yyyy_s, hh_s, m_s, ss_s;
+		dd_s = sanity_check_int(dd, 2);
+		mm_s = sanity_check_int(mm, 2);
+		yyyy_s = sanity_check_int(yyyy, 4);
+		hh_s = sanity_check_int(hh, 2);
+		m_s = sanity_check_int(m, 2);
+		ss_s = sanity_check_int(ss, 2);
+
+		// If all are good, set time?
+		if(dd_s && mm_s && yyyy_s && hh_s && m_s && ss_s){
+			struct tm time;
+			printf("Date and time probably entered correctly. Setting to: \n");
+			uint8_t dd_i = atoi(dd);
+			uint8_t mm_i = atoi(mm);
+			uint16_t yyyy_i = atoi(yyyy);
+			uint8_t hh_i = atoi(hh);
+			uint8_t m_i = atoi(m);
+			uint8_t ss_i = atoi(ss);
+			printf("%d/%d/%d ", dd, mm, yyyy);
+			printf("%d:%d:%d\n", hh, m, ss);
+			time.tm_mday = dd_i;
+			time.tm_mon = mm_i;
+			time.tm_year = yyyy_i;
+			time.tm_hour = hh_i;
+			time.tm_min = m_i;
+
+			rtc->setTime(&time);
+			printf("Time set.\n");
+
+		} else {
+			printf("You didn't enter a number correctly: ");
+			printf("%s/%s/%s ", dd, mm, yyyy);
+			printf("%s:%s:%s\n", hh, m, ss);
 		}
 
+		printf("Setting date and time to ");
 
 	}
-	printf("Set time? [Y/n]\n");
 }
 
-void CommandReader::setAlarmInput(DS3231 * rtc){
+void CommandReader::setAlarmInput(){
 
 }
 
 //TODO: timeout
-bool CommandReader::mainLoop(DS3231 * rtc){
-
-	char enter[32];
-	if(!entered_config){
-		printf("Enter config? [y/N]\n");
-		scanf("%s", enter);
-	}
-	if(strcmp(enter, "y") == 0 || strcmp(enter, "Y") == 0 || entered_config){
-		char cmd[8];
-		printf("Enter command (type HELP for a list)\n");
-		scanf("%s", cmd);
-
-		if(strcmp(cmd, help) == 0){
-			printf("HELP - this shows help (current option)\n");
-			printf("SETDT - set clock time and date\n");
-			printf("SETALRM - set wake up interval \n");
-			printf("EXIT - exit command interface \n");
-		} else if (strcmp(cmd, setDate) == 0){
-			setDateTimeInput(rtc);
-		} else if (strcmp(cmd, setAlarm) == 0){
-			setAlarmInput(rtc);
-		} else if(strcmp(cmd, exit) == 0){
-			return false;
+void CommandReader::mainLoop(){
+	running = true;
+	while(running){
+		char enter[32];
+		if(!entered_config){
+			printf("Enter config? [y/N]\n");
+			scanf("%s", enter);
 		}
-		return true;
-	}
+		if(strcmp(enter, "y") == 0 || strcmp(enter, "Y") == 0 || entered_config){
+			char cmd[8];
+			printf("Enter command (type HELP for a list)\n");
+			scanf("%s", cmd);
 
-	return false;
+			if(strcmp(cmd, HELP) == 0){
+				printf("HELP - this shows help (current option)\n");
+				printf("SETDT - set clock time and date\n");
+				printf("SETALRM - set wake up interval \n");
+				printf("EXIT - exit command interface \n");
+			} else if (strcmp(cmd, SETDT) == 0){
+				setDateTimeInput();
+			} else if (strcmp(cmd, SETALRM) == 0){
+				setAlarmInput();
+			} else if(strcmp(cmd, EXIT) == 0){
+				running = false;
+			}
+		}
+	}
 }
 
 CommandReader::~CommandReader() {

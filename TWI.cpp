@@ -115,7 +115,7 @@ void TWI::beginWrite(register8_t address){
 		
 		// Asking for a response
 		twi_port->MASTER.CTRLC = TWI_MASTER_CMD_RECVTRANS_gc;
-		int timeout = 0;
+
 		// Wait until this transaction is complete
 		while(!(twi_port->MASTER.STATUS & TWI_MASTER_WIF_bm)){}
 		//printf("a:%3d - s:%2d - d:%2d\n", address << 0, twi_port->MASTER.STATUS, twi_port->MASTER.DATA);
@@ -165,7 +165,7 @@ void TWI::beginRead(register8_t address){
 }
 
 char TWI::beginReadFirstByte(register8_t address){
-	char c;
+	char c = '\0';
 	if(twim_status == TWIM_STATUS_READY){
 		// Test if address exists..
 
@@ -270,7 +270,9 @@ void TWI::writeData(register8_t address, const char * data, int length){
 char * TWI::readData(register8_t address){
 	unsigned int dataReceived = 0;
 	TWI_t * port = twi_data->twi_port;
-	char * data;
+
+	char dataBuffer[twi_data->maxDataLength];
+	char * data = dataBuffer;
 
 	// set address with start bit
 	port->MASTER.ADDR = address | 0x01;
@@ -301,7 +303,7 @@ register8_t * TWI::pollBus(){
 		
 		// Asking for a response
 		twi_port->MASTER.CTRLC = TWI_MASTER_CMD_RECVTRANS_gc;
-		int timeout = 0;
+
 		// Wait until this transaction is complete
 		while(!(twi_port->MASTER.STATUS & TWI_MASTER_WIF_bm)){	}
 		//printf("a:%3d - s:%2d - d:%2d\n", address << 0, twi_port->MASTER.STATUS, twi_port->MASTER.DATA);

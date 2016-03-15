@@ -11,7 +11,7 @@
 #include <stdio.h>
 extern "C"{
 
-	static int usart_putchar(char c, FILE * stream);
+	//static int usart_putchar(char c, FILE * stream);
 
 	int usart_getchar(FILE * stream);
 	void setDebugOutputPort(USART_t * port);
