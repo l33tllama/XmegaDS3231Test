@@ -34,7 +34,6 @@ bool sanity_check_int(char * str, uint8_t len){
 }
 
 void CommandReader::setDateTimeInput(){
-	char yn[3];
 	// 00/00/0000 00:00:00
 	printf("Enter date (format: YYYY/MM/DD HH:mm:SS\n");
 	char datetime[64];
@@ -43,7 +42,7 @@ void CommandReader::setDateTimeInput(){
 
 	// if entered the correct amoun of digits including separating characters
 	if(strlen(datetime) == 19){
-
+		struct tm time;
 		// split string into relevant sections using strtok
 		char * yyyy, * mm, * dd, * hh, * m, * ss;
 		yyyy = strtok(datetime, "/");
@@ -64,7 +63,7 @@ void CommandReader::setDateTimeInput(){
 
 		// If all are good, set time?
 		if(dd_s && mm_s && yyyy_s && hh_s && m_s && ss_s){
-			struct tm time;
+
 			printf("Date and time probably entered correctly. Setting to: \n");
 			uint8_t dd_i = atoi(dd);
 			uint8_t mm_i = atoi(mm);
@@ -89,15 +88,14 @@ void CommandReader::setDateTimeInput(){
 			printf("d:%s m:%s y:%s ", dd, mm, yyyy);
 			printf("h:%s m:%s s:%s\n", hh, m, ss);
 		}
-
-		printf("Setting date and time to: \n");
 	} else {
 		printf("Improper datetime format. Not exectly 19 characters. (was: %d characters and : %s) \n", strlen(datetime), datetime);
 	}
 }
 
 void CommandReader::setAlarmInput(){
-
+	//TODO: similar to set time, but read asterisks
+	//TODO: maybe only update time values that don't have asterisks in other function?
 }
 
 //TODO: timeout
