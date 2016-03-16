@@ -26,10 +26,10 @@ DS3231::DS3231(TWI_Data * twi_d, uint8_t address, bool high_update_frequency){
 	if(high_update_frequency){
 		//TODO: get system time and setup interrupts
 		this->address = address;
-		system_time = NULL;
+		system_time = 0;
 	} else {
 		DS3231(twi_d, address);
-		system_time = NULL;
+		system_time = 0;
 	}
 }
 

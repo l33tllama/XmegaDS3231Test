@@ -98,9 +98,21 @@ void setAlarm(DS3231 * rtc){
 	rtc->setAlarmInterval(&time, weekDay);
 }
 
+void setupPortAInterrupts(){
+	PORTA.PIN5CTRL = PORT_OPC_PULLDOWN_gc | PORT_ISC_RISING_gc;
+	PORTA.INT0MASK = PIN5_bm;
+	PORTA.INTCTRL = PORT_INT0LVL_MED_gc;
+}
+
+// Alarm Interrupt routine
+ISR(PORTA_INT0_vect){
+
+}
+
 int main(){
 	initClocks();
 	restartInterrupts();
+	setupPortAInterrupts();
 	setupUSART();
 	setDebugOutputPort(&USARTC0);
 
@@ -133,7 +145,7 @@ int main(){
 		//printf("Oh hi. %d\n", i++);
 		PORTB.OUT = out;
 		out  = (out << 1);
-				if(out == 0b10000){
+				if(out == 0b1000){
 					out = 0x01;
 				}
 		_delay_ms(1000);
