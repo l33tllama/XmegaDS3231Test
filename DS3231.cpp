@@ -98,14 +98,12 @@ void DS3231::setAlarmInterval(struct tm * time, WMDay wm){
 	uint8_t wmday = (wm == weekDay) ? bind2bcd(time->tm_wday) : bind2bcd(time->tm_mday);
 
 	// Every second
-	if(time->tm_sec == 1){
-		if(time->tm_min == 0 && time->tm_hour == 0 &&
-				time->tm_wday){
+	if( (time->tm_sec == 1 || time->tm_sec == 0 ) &&
+		time->tm_min == 0 && time->tm_hour == 0 && time->tm_wday){
 			seconds |= _BV(7);
 			minutes |= _BV(7);
 			hours |= _BV(7);
 			wmday |= (wm == weekDay) ? _BV(7) : _BV(6) + _BV(7);
-		}
 	}
 
 	 /* Every few seconds */

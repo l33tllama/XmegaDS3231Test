@@ -7,7 +7,6 @@
 #include "DS3231.h"
 #include "CommandReader.h"
 
-
 USART_Data c0d;
 USART C0;
 TWI_Data twi_d;
