@@ -89,6 +89,18 @@ void DS3231::setTime(struct tm * time){
 	printf("Done.\n");
 }
 
+/*
+ * Alarm configs
+ * * once per second
+ * * when seconds match (ie on the nth second?) - may have to increment seconds for an interval
+ * * when minutes and seconds match (eg 2m 30s on this hour)
+ * * when hours, minutes and seconds match (eg 4:30:00 PM every day)
+ * * When date, hours, minutes and seconds match (eg 12th of each month, 3:30:00PM)
+ * * when day, hours, minutes and seconds match (eg every Monday, 4:15:00PM)
+ */
+
+// TODO: set alarm manually
+
 /* Sets the interval for alarm 1 */
 void DS3231::setAlarmInterval(struct tm * time, WMDay wm){
 
@@ -100,6 +112,7 @@ void DS3231::setAlarmInterval(struct tm * time, WMDay wm){
 	// Every second
 	if( (time->tm_sec == 1 || time->tm_sec == 0 ) &&
 		time->tm_min == 0 && time->tm_hour == 0 && time->tm_wday){
+			printf("Setting alarm for every 1 second..");
 			seconds |= _BV(7);
 			minutes |= _BV(7);
 			hours |= _BV(7);
@@ -109,6 +122,7 @@ void DS3231::setAlarmInterval(struct tm * time, WMDay wm){
 	 /* Every few seconds */
 	else if(time->tm_min == 0 && time->tm_hour == 0 &&
 			time->tm_wday == 0){
+		printf("Setting alarm for every %d seconds..", time->tm_min);
 		minutes |= _BV(7);
 		hours |= _BV(7);
 		wmday |= (wm == weekDay) ? _BV(7) : _BV(6) + _BV(7);
@@ -116,6 +130,7 @@ void DS3231::setAlarmInterval(struct tm * time, WMDay wm){
 
 	/* When minutes and second match */
 	else if (time->tm_hour == 0 && time->tm_wday == 0){
+		printf("Setting alarm for every %d mins and %d seconds..", time->tm_sec, time->tm_min);
 		hours |= _BV(7);
 		wmday |= (wm == weekDay) ? _BV(7) : _BV(6) + _BV(7);
 	}
@@ -123,11 +138,13 @@ void DS3231::setAlarmInterval(struct tm * time, WMDay wm){
 	/* When hours, minutes and seconds match */
 	else if((wm == weekDay && time->tm_wday == 0) ||
 			(wm == dayOfMonth && time->tm_mday == 0)){
+		printf("Setting alarm for every %d hours, %d mins and %d seconds..", time->tm_hour, time->tm_min, time->tm_sec);
 		wmday |= (wm == weekDay) ? _BV(7) : _BV(6) + _BV(7);
 	}
 
-	/* Specific time (D/H/M/S != 0) */
+	/* Specific time (D & H & M & S != 0) */
 	else {
+		printf("Setting alarm for every %d days, %d hours, %d mins and %d seconds..", wmday, time->tm_hour, time->tm_min, time->tm_sec);
 		// set dy/dt (weekday / day of month)
 		wmday |= (wm == weekDay) ? 0 : _BV(6);
 	}
