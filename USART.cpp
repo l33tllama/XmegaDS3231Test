@@ -18,8 +18,8 @@ USART::USART(USART_Data * usart_data, bool interrupt_en) {
 	this->port = usart_data->port;
 	this->usart_port = usart_data->usart_port;
 
-	int txPin = usart_data->txPin;
-	int rxPin = usart_data->rxPin;
+	uint8_t txPin = usart_data->txPin;
+	uint8_t rxPin = usart_data->rxPin;
 
 	// Setup USART port pins
 	port->OUTSET = txPin;
@@ -30,7 +30,7 @@ USART::USART(USART_Data * usart_data, bool interrupt_en) {
 
 	usart_port->BAUDCTRLB = 0; //Just to be sure that BSCALE is 0
 	float CTRLA_Calc = (F_CPU / (16 * usart_data->baudRate));
-	usart_port->BAUDCTRLA = 0xCF;
+	usart_port->BAUDCTRLA = 0xCF; // temp. pre-calc value for full 32MHz osc and 9600 baud
 
 	// Enable serial interrupts if decided so
 	if(interrupt_en){
@@ -48,20 +48,20 @@ USART::USART(USART_Data * usart_data, bool interrupt_en) {
 
 }
 
-int USART::PutChar(int c){
+void USART::putChar(int c){
 	if (c == '\n')
-		PutChar('\r');
+		putChar('\r');
 
 	// Wait for the transmit buffer to be empty
 	while (  !(this->usart_port->STATUS & USART_DREIF_bm) );
 
 	// Put our character into the transmit buffer
 	this->usart_port->DATA = c;
-
-	return 0;
 }
 
-int USART::GetChar(){
+//TODO: write string (puts(char * str))
+
+char USART::getChar(){
 	while( !(this->usart_port->STATUS & USART_RXCIF_bm) ); //Wait until data has been received.
 	char data = this->usart_port->DATA; //Temporarily store received data
 	if(data == '\r')
