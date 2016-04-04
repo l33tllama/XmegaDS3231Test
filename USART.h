@@ -28,6 +28,7 @@ public:
 	USART(USART_Data * usart_data, bool interrupt_en);
 	void putChar(int c);
 	char getChar();
+	void putStr(char * str);
 	virtual ~USART();
 };
 

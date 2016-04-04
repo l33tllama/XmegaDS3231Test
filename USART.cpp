@@ -59,7 +59,12 @@ void USART::putChar(int c){
 	this->usart_port->DATA = c;
 }
 
-//TODO: write string (puts(char * str))
+// send string
+void USART::putStr(char * str){
+	while(*str){
+		putChar(*str++);
+	}
+}
 
 char USART::getChar(){
 	while( !(this->usart_port->STATUS & USART_RXCIF_bm) ); //Wait until data has been received.
