@@ -7,11 +7,16 @@
 #include "DS3231.h"
 #include "CommandReader.h"
 
-USART_Data c0d;
-USART C0;
+#define DS3231_ADDR 0x68
+
+USART_Data uc0d;
+USART UC0;
 TWI_Data twi_d;
 DS3231 rtc;
 CommandReader cmdReader(&rtc);
+
+#define ALARM_FLAG 0x01
+volatile uint8_t interrupt_status = 0x00;
 
 void initClocks(){
 	OSC.CTRL |= OSC_RC32MEN_bm | OSC_RC32KEN_bm;  /* Enable the internal 32MHz & 32KHz oscillators */
@@ -24,13 +29,13 @@ void initClocks(){
 }
 
 void setupUSART(){
-	c0d.baudRate = 9600;
-	c0d.port = &PORTC;
-	c0d.usart_port = &USARTC0;
-	c0d.rxPin = PIN2_bm;
-	c0d.txPin = PIN3_bm;
+	uc0d.baudRate = 9600;
+	uc0d.port = &PORTC;
+	uc0d.usart_port = &USARTC0;
+	uc0d.rxPin = PIN2_bm;
+	uc0d.txPin = PIN3_bm;
 
-	C0 = USART(&c0d, false);
+	UC0 = USART(&uc0d, false);
 }
 
 void setupTWI(uint8_t address){
@@ -105,7 +110,7 @@ void setupPortAInterrupts(){
 
 // Alarm Interrupt routine
 ISR(PORTA_INT0_vect){
-
+	interrupt_status &= ALARM_FLAG;
 }
 
 int main(){
@@ -121,7 +126,7 @@ int main(){
 	printf("\nPROGRAM BEGIN..\n\n");
 
 	_delay_ms(200);
-	setupTWI(0x68);
+	setupTWI(DS3231_ADDR);
 	//cmdReader = CommandReader(&rtc);
 	//setAlarm(&rtc);
 	//pollBus(&rtc);
@@ -141,12 +146,22 @@ int main(){
 	uint8_t out = 0x01;
 	// LED looping test
 	while(1){
+
+
 		//printf("Oh hi. %d\n", i++);
 		PORTB.OUT = out;
 		out  = (out << 1);
-				if(out == 0b1000){
-					out = 0x01;
-				}
+		if(out == 0b1000){
+			out = 0x01;
+		}
+
+		if(interrupt_status && ALARM_FLAG){
+			printf("RTC alarm triggered!!!\n");
+			out &= 0b1000;
+			rtc.resetAlarm1Flag();
+			rtc.setNextIntervalAlarm();
+			interrupt_status &= ~ALARM_FLAG;
+		}
 		_delay_ms(1000);
 		time_rcv = *rtc.getTime();
 
