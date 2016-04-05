@@ -43,7 +43,8 @@ TWI::TWI(TWI_Data * twi_data) {
 	// Set up TWI port (address, status, CTRL, baud)
 	twi_port->MASTER.ADDR = twi_data->master_addr;
 	twi_port->MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
-	twi_port->CTRL |= TWI_SDAHOLD_400NS_gc;
+	//twi_port->CTRL |= TWI_SDAHOLD_400NS_gc;
+	twi_port->CTRL |= TWI_SDAHOLD_bm;
 	twi_port->MASTER.BAUD = getBaudVal((int)twi_data->baud_hz);
 
 	// Enable TWI on whatever port

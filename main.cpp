@@ -127,11 +127,6 @@ int main(){
 
 	_delay_ms(200);
 	setupTWI(DS3231_ADDR);
-	//cmdReader = CommandReader(&rtc);
-	//setAlarm(&rtc);
-	//pollBus(&rtc);
-
-	//setDate(&rtc);
 
 	// startup commands - set time, alarm, etc
 	cmdReader.mainLoop();
@@ -142,18 +137,34 @@ int main(){
 			time_rcv.tm_mon, time_rcv.tm_year,
 			time_rcv.tm_hour, time_rcv.tm_min, time_rcv.tm_sec);
 
+	uint16_t ms_count;
+	const uint16_t DELAY_TIME = 1000;
 
 	uint8_t out = 0x01;
-	// LED looping test
+
+	// main loop
 	while(1){
 
+		if(ms_count >= DELAY_TIME){
 
-		//printf("Oh hi. %d\n", i++);
-		PORTB.OUT = out;
-		out  = (out << 1);
-		if(out == 0b1000){
-			out = 0x01;
+			out  = (out << 1);
+			if(out == 0b1000){
+				out = 0x01;
+			}
+
+			time_rcv = *rtc.getTime();
+
+			printf("%02d/%02d/%02d %02d:%02d:%02d\n", time_rcv.tm_mday,
+					time_rcv.tm_mon, time_rcv.tm_year,
+					time_rcv.tm_hour, time_rcv.tm_min, time_rcv.tm_sec);
+
+			ms_count = 0;
+
 		}
+
+		_delay_ms(5);
+		ms_count += 5;
+
 
 		if(interrupt_status && ALARM_FLAG){
 			printf("RTC alarm triggered!!!\n");
@@ -162,12 +173,9 @@ int main(){
 			rtc.setNextIntervalAlarm();
 			interrupt_status &= ~ALARM_FLAG;
 		}
-		_delay_ms(1000);
-		time_rcv = *rtc.getTime();
 
-		printf("%02d/%02d/%02d %02d:%02d::%02d\n", time_rcv.tm_mday,
-				time_rcv.tm_mon, time_rcv.tm_year,
-				time_rcv.tm_hour, time_rcv.tm_min, time_rcv.tm_sec);
+		PORTB.OUT = out;
+
 	}
 	return 0;
 }

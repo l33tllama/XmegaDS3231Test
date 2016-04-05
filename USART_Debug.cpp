@@ -3,8 +3,8 @@
 #include <avr/io.h>
 extern "C"{
 
-	FILE * usart_str;
-	USART_t * stdio_usart;
+	static USART_t * stdio_usart;
+	static FILE * usart_str;
 
 	static int usart_putchar(char c, FILE * stream){
 		if (c == '\n')
