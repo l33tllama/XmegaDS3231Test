@@ -172,8 +172,10 @@ int main(){
 			printf("RTC alarm triggered!!!\n");
 			PORTB.OUTTGL = 0b1000;
 			rtc.resetAlarm1Flag();
+			printf("Setting next alarm.\n");
 			rtc.setNextIntervalAlarm();
 			interrupt_status &= ~ALARM_FLAG;	//clear alarm flag
+			printf("Interrupt status reg reset.\n");
 		}
 
 		PORTB.OUT = out;

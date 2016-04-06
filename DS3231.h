@@ -32,7 +32,14 @@
 #define DS3231_A1REG 0x07
 #define DS3231_A2REG 0x0B
 #define DS3231_CONTROLREG 0x0E
+#define CONTROLREG_A1IE 0x01
+#define CONTROLREG_A2IE 0x02
+#define CONTROLREG_INTCN 0x04
+#define CONTROLREG_EOSC 0x80
 #define DS3231_STATUSREG 0x0F
+#define STATUSREG_A1F 0x01
+#define STATUSREG_A2F 0x02
+#define STATUSREG_EN32kHz 0x08
 
 enum WMDay { weekDay, dayOfMonth };
 enum AlarmType { disabled, seconds, interval, daily, once_off };
@@ -63,6 +70,7 @@ public:
 	DS3231();
 	DS3231(TWI_Data * twi_data, uint8_t address);
 	DS3231(TWI_Data * twi_data, uint8_t address, bool high_update_frequency);
+	void disable32kHzOut();
 	void setTime(struct tm * time);
 	struct tm * getTime();
 	void resetAlarm1Flag();

@@ -40,6 +40,7 @@ DS3231::DS3231(TWI_Data * twi_d, uint8_t address) : TWI(twi_d){
 	alarmType = disabled;
 	alarm1_en = false;
 	alarm2_en = false;
+	disable32kHzOut();
 }
 
 // TODO: using interrupts to update system clock internally
@@ -55,6 +56,17 @@ DS3231::DS3231(TWI_Data * twi_d, uint8_t address, bool high_update_frequency){
 	alarm1_en = false;
 	alarm2_en = false;
 	alarmType = disabled;
+}
+
+void DS3231::disable32kHzOut(){
+
+	// read current status register
+	uint8_t stat_reg = readI2C_Register(address, DS3231_STATUSREG);
+
+	// and with not 32khz output and update
+	stat_reg &= ~STATUSREG_EN32kHz;
+	writeI2C_Register(address, DS3231_STATUSREG, stat_reg);
+
 }
 
 // functions for converting binary <-> binary-coded-decimal
@@ -113,12 +125,12 @@ void DS3231::setTime(struct tm * time){
 
 	// ensure main oscillator is running!
 	// read current OSF (oscillator flag) value (0b10000000)
-	uint8_t stat_reg = readI2C_Register(address, DS3231_STATUSREG);
+	uint8_t ctrl_reg = readI2C_Register(address, DS3231_CONTROLREG);
 	printf("Read status reg.\n");
-	stat_reg &= ~0x80;	// set to NOT 1 (0) (when set to 1 it's not running)
+	ctrl_reg &= ~CONTROLREG_EOSC;	// set to NOT 1 (0) (when set to 1 it's not running)
 
 	// update status register, with oscillator set to running
-	writeI2C_Register(address, DS3231_STATUSREG, stat_reg);
+	writeI2C_Register(address, DS3231_CONTROLREG, ctrl_reg);
 	printf("Done.\n");
 }
 
@@ -150,8 +162,8 @@ void DS3231::resetAlarm1Flag(){
 	// get current status register
 	uint8_t stat_reg = readI2C_Register(address, DS3231_STATUSREG);
 
-	// logical and with not A2F (ensure it's 0)
-	stat_reg &= ~0x01;
+	// logical and with not A1F (ensure it's 0)
+	stat_reg &= ~STATUSREG_A1F;
 	writeI2C_Register(address, DS3231_STATUSREG, stat_reg);
 }
 
@@ -161,18 +173,18 @@ void DS3231::resetAlarm2Flag(){
 	uint8_t stat_reg = readI2C_Register(address, DS3231_STATUSREG);
 
 	// logical and with not A2F (ensure it's 0)
-	stat_reg &= ~0x02;
+	stat_reg &= ~STATUSREG_A2F;
 	writeI2C_Register(address, DS3231_STATUSREG, stat_reg);
 }
 
 // enable alarm 1
 void DS3231::enableAlarm1(){
 	if(!alarm1_en){
-		uint8_t stat_reg = readI2C_Register(address, DS3231_CONTROLREG);
+		uint8_t ctrl_reg = readI2C_Register(address, DS3231_CONTROLREG);
 
-		//logical and with A2IE
-		stat_reg &= 0x01;
-		writeI2C_Register(address, DS3231_CONTROLREG, stat_reg);
+		//logical and with A2IE & INTCN
+		ctrl_reg &= (CONTROLREG_A1IE & CONTROLREG_INTCN);
+		writeI2C_Register(address, DS3231_CONTROLREG, ctrl_reg);
 		alarm1_en = true;
 	}
 }
@@ -180,11 +192,11 @@ void DS3231::enableAlarm1(){
 // enable alarm 2
 void DS3231::enableAlarm2(){
 	if(!alarm2_en){
-		uint8_t stat_reg = readI2C_Register(address, DS3231_CONTROLREG);
+		uint8_t ctrl_reg = readI2C_Register(address, DS3231_CONTROLREG);
 
-		//logical and with A2IE
-		stat_reg &= 0x02;
-		writeI2C_Register(address, DS3231_CONTROLREG, stat_reg);
+		//logical and with A2IE & INTCN
+		ctrl_reg &= (CONTROLREG_A2IE & CONTROLREG_INTCN);
+		writeI2C_Register(address, DS3231_CONTROLREG, ctrl_reg);
 		alarm2_en = true;
 	}
 
@@ -287,6 +299,12 @@ void DS3231::setNextIntervalAlarm(){
 
 	printf("Next alarm  : %d %d:%d:%d\n", next_alarm->tm_mday, next_alarm->tm_hour, next_alarm->tm_min, next_alarm->tm_sec);
 
+
+	// could bre reduntant.. trying anyway
+	if(next_alarm->tm_hour == current_time->tm_hour){
+		mday |= _BV(7);
+	}
+
 	// if the next interval is tomorrow, rtc needs to know that day/date is not to be ignored
 	if(!(next_alarm->tm_wday > current_time->tm_wday ||
 		next_alarm->tm_mday > current_time->tm_mday)){
@@ -365,4 +383,3 @@ void setAlarm(){
 DS3231::~DS3231() {
 	// TODO Auto-generated destructor stub
 }
-
