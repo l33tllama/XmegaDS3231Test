@@ -8,15 +8,15 @@
 #include "CommandReader.h"
 
 #define DS3231_ADDR 0x68
+#define ALARM_FLAG 0x01
+
+volatile uint8_t interrupt_status = 0x00;
 
 USART_Data uc0d;
 USART UC0;
 TWI_Data twi_d;
 DS3231 rtc;
 CommandReader cmdReader(&rtc);
-
-#define ALARM_FLAG 0x01
-volatile uint8_t interrupt_status = 0x00;
 
 void initClocks(){
 	OSC.CTRL |= OSC_RC32MEN_bm | OSC_RC32KEN_bm;  /* Enable the internal 32MHz & 32KHz oscillators */
@@ -103,6 +103,7 @@ void setAlarm(DS3231 * rtc){
 }
 
 void setupPortAInterrupts(){
+	PORTA.DIR = 0x00;
 	PORTA.PIN5CTRL = PORT_OPC_PULLDOWN_gc | PORT_ISC_RISING_gc;
 	PORTA.INT0MASK = PIN5_bm;
 	PORTA.INTCTRL = PORT_INT0LVL_MED_gc;
@@ -110,7 +111,7 @@ void setupPortAInterrupts(){
 
 // Alarm Interrupt routine
 ISR(PORTA_INT0_vect){
-	interrupt_status &= ALARM_FLAG;
+	interrupt_status |= ALARM_FLAG;
 }
 
 int main(){
@@ -137,41 +138,42 @@ int main(){
 			time_rcv.tm_mon, time_rcv.tm_year,
 			time_rcv.tm_hour, time_rcv.tm_min, time_rcv.tm_sec);
 
-	uint16_t ms_count;
+	uint16_t ms_count = 0;
 	const uint16_t DELAY_TIME = 1000;
 
 	uint8_t out = 0x01;
+
+	uint8_t out_loop[4][3] = {{0, 0, 1}, {0, 1, 0}, {1, 0, 0}, {0, 1, 0}};
+	uint8_t out_i = 0;
 
 	// main loop
 	while(1){
 
 		if(ms_count >= DELAY_TIME){
 
-			out  = (out << 1);
-			if(out == 0b1000){
-				out = 0x01;
-			}
+			out_i = (out_i + 1) % 4;
+			out = out_loop[out_i][0] | out_loop[out_i][1] << 1 | out_loop[out_i][2] << 2 | (out & 0b1000);
 
 			time_rcv = *rtc.getTime();
 
 			printf("%02d/%02d/%02d %02d:%02d:%02d\n", time_rcv.tm_mday,
-					time_rcv.tm_mon, time_rcv.tm_year,
+					time_rcv.tm_mon, time_rcv.tm_year + 1900,
 					time_rcv.tm_hour, time_rcv.tm_min, time_rcv.tm_sec);
 
 			ms_count = 0;
 
+			//printf("Interrupt status: %d\n", interrupt_status);
 		}
 
-		_delay_ms(5);
-		ms_count += 5;
+		_delay_ms(10);
+		ms_count += 10;
 
-
-		if(interrupt_status && ALARM_FLAG){
+		if((interrupt_status & ALARM_FLAG) == ALARM_FLAG){
 			printf("RTC alarm triggered!!!\n");
-			out &= 0b1000;
+			PORTB.OUTTGL = 0b1000;
 			rtc.resetAlarm1Flag();
 			rtc.setNextIntervalAlarm();
-			interrupt_status &= ~ALARM_FLAG;
+			interrupt_status &= ~ALARM_FLAG;	//clear alarm flag
 		}
 
 		PORTB.OUT = out;

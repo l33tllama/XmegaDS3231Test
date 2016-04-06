@@ -10,10 +10,12 @@
 #include <stdio.h>
 #include "DS3231.h"
 
+
 #define HELP "HELP"
 #define SETDT "SETDT"
 #define SETALRM "SETALRM"
 #define EXIT "EXIT"
+#define MAX_INPUT_LEN 64
 
 class CommandReader {
 private:
