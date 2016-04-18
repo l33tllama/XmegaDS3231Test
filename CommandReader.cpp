@@ -215,7 +215,6 @@ void CommandReader::setAlarmInput(){
 			uint8_t dd_i = atoi(dd);
 
 			printf("Setting alarm interval for every: %d days, %d:%d:%d\n", dd_i, hh_i, mm_i, ss_i);
-
 			rtc->setAlarmInterval(ss_i, mm_i, hh_i, dd_i);
 			rtc->setNextIntervalAlarm();
 		} else {
@@ -228,8 +227,22 @@ void CommandReader::setAlarmInput(){
 	 /* alarm every second */
 	else if (alarmType == 's'){
 
+	} /* alarm on x second every minute (mostly just testing) */
+	else if (alarmType == 'm'){
+		alarmInput = alarmInput + 2;
+		if(strlen(alarmInput) > 2){
+			printf("Error! please enter 2 or 1 digits for seconds.\n");
+		}
+
+		if(sanity_check_int(alarmInput, 2)){
+			uint8_t ss_i = atoi(alarmInput);
+
+			rtc->setMinuteAlarm(ss_i);
+		}
+
+
 	} else {
-		printf("Alarm type: %s not recognised. Please try again.\n", alarmType);
+		printf("Alarm type: %c not recognised. Please try again.\n", alarmType);
 	}
 
 

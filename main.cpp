@@ -152,13 +152,15 @@ int main(){
 		if(ms_count >= DELAY_TIME){
 
 			out_i = (out_i + 1) % 4;
-			out = out_loop[out_i][0] | out_loop[out_i][1] << 1 | out_loop[out_i][2] << 2 | (out & 0b1000);
+			out = out_loop[out_i][0] | out_loop[out_i][1] << 1 | out_loop[out_i][2] << 2 | (out & PIN3_bm);
 
 			time_rcv = *rtc.getTime();
 
 			printf("%02d/%02d/%02d %02d:%02d:%02d\n", time_rcv.tm_mday,
 					time_rcv.tm_mon, time_rcv.tm_year + 1900,
 					time_rcv.tm_hour, time_rcv.tm_min, time_rcv.tm_sec);
+
+			//rtc.readCurrentAlarm1();
 
 			ms_count = 0;
 
@@ -170,8 +172,11 @@ int main(){
 
 		if((interrupt_status & ALARM_FLAG) == ALARM_FLAG){
 			printf("RTC alarm triggered!!!\n");
-			PORTB.OUTTGL = 0b1000;
-			rtc.resetAlarm1Flag();
+			PORTB.OUTTGL = PIN3_bm;
+			_delay_ms(8);
+			//uint8_t ctrl_status = rtc.readI2C_Register(DS3231_ADDR, DS3231_CONTROLREG);
+			//printf("Was alarm flag set? %d\n", ctrl_status);
+			//rtc.resetAlarm1Flag();
 			printf("Setting next alarm.\n");
 			rtc.setNextIntervalAlarm();
 			interrupt_status &= ~ALARM_FLAG;	//clear alarm flag

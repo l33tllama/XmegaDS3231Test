@@ -165,6 +165,40 @@ void TWI::beginRead(register8_t address){
 
 }
 
+void TWI::beginWriteRead(register8_t address, register8_t write_val){
+	if(twim_status == TWIM_STATUS_READY){
+		// Test if address exists..
+
+		// start the TWI transaction (no action required..?)
+		twi_port->MASTER.CTRLC = TWI_MASTER_CMD_NOACT_gc;
+
+		// ADDR is slave address!
+		twi_port->MASTER.ADDR = (register8_t) (address << 1) | 0x00;
+
+		// Asking for a response
+		twi_port->MASTER.CTRLC = TWI_MASTER_CMD_RECVTRANS_gc;
+
+		// Wait until this transaction is complete
+		while(!(twi_port->MASTER.STATUS & TWI_MASTER_WIF_bm)){}
+		//printf("a:%3d - s:%2d - d:%2d\n", address << 0, twi_port->MASTER.STATUS, twi_port->MASTER.DATA);
+
+		// See if we got a RXACK!
+		if((twi_port->MASTER.STATUS & TWI_MASTER_RXACK_bm)){
+			printf("Error! Device not found at address %x\n", address);
+		}
+		// End transaction
+		//twi_port->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
+
+		twim_status = TWIM_STATUS_BEGIN_WRITEREAD;
+		//printf("About write first byte in WR transmission..\n");
+
+		putChar(write_val);
+
+	} else {
+		printf("Error beginning write - TWI bus not ready.");
+	}
+}
+
 char TWI::beginReadFirstByte(register8_t address){
 	char c = '\0';
 	if(twim_status == TWIM_STATUS_READY){
@@ -204,7 +238,7 @@ TWIM_STATUS_t TWI::getTWIMStatus(){
 }
 
 void TWI::putChar(char c){
-	if(twim_status == TWIM_STATUS_BEGIN_WRITE){
+	if(twim_status == TWIM_STATUS_BEGIN_WRITE || TWIM_STATUS_BEGIN_WRITEREAD){
 		twim_status = TWIM_STATUS_BUSY;
 		
 		// send data to port
@@ -231,9 +265,11 @@ void TWI::putChar(char c){
 
 char TWI::getChar(){
 	char c = 0;
-	if(twim_status == TWIM_STATUS_BEGIN_READ){
+	if(twim_status == TWIM_STATUS_BEGIN_READ || TWIM_STATUS_BEGIN_WRITEREAD){
 		twim_status = TWIM_STATUS_BUSY;
-					twi_port->MASTER.CTRLC = TWI_MASTER_CMD_RECVTRANS_gc;
+
+		twi_port->MASTER.CTRLC = TWI_MASTER_CMD_RECVTRANS_gc;
+
 		while(!(twi_port->MASTER.STATUS & TWI_MASTER_RIF_bm)){	}
 		c = twi_port->MASTER.DATA;
 

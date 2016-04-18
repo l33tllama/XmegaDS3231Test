@@ -26,7 +26,8 @@ typedef enum TWIM_STATUS_enum {
 	TWIM_STATUS_BUSY = (0x00<<0),
 	TWIM_STATUS_READY = (0x01<<0),
 	TWIM_STATUS_BEGIN_WRITE = (0x02<<0),
-	TWIM_STATUS_BEGIN_READ = (0x00<<0)
+	TWIM_STATUS_BEGIN_READ = (0x04<<0),
+	TWIM_STATUS_BEGIN_WRITEREAD = (0x08<<0)
 } TWIM_STATUS_t;
 
 typedef struct TWI_Data_struct{
@@ -55,6 +56,7 @@ public:
 	void beginWrite(register8_t address);
 	void beginRead(register8_t address);
 	char beginReadFirstByte(register8_t address);
+	void beginWriteRead(register8_t address, register8_t write_val);
 	void putChar(char c);
 	char getChar();
 	void endTransmission();
