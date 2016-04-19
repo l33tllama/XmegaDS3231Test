@@ -104,10 +104,10 @@ uint8_t DS3231::readI2C_Register(uint8_t addr, uint8_t reg) {
 	beginWrite(addr);
 	putChar(reg);
 	endTransmission();
-	_delay_ms(5);
-	beginRead(addr);
-	_delay_ms(5);
-	reg_val = getChar();
+	//_delay_ms(5);
+	//beginRead(addr);
+	//_delay_ms(5);
+	reg_val = beginReadFirstByte(address);
 	//printf("next byte for testing.. %d\n", getChar());
 	endTransmission();
 	//printf("Read i2c register val: %d\n", reg_val);
@@ -237,8 +237,8 @@ void DS3231::printControlRegisters(){
 	putChar(DS3231_CONTROLREG);
 	endTransmission();
 
-	beginRead(address);
-	control_reg = getChar();
+	//beginRead(address);
+	control_reg = beginReadFirstByte(address);
 	endTransmission();
 	printf("Control Register:\n");
 
@@ -260,8 +260,8 @@ void DS3231::printStatusRegisters(){
 	putChar(DS3231_STATUSREG);
 	endTransmission();
 
-	beginRead(address);
-	status_reg = getChar();
+	//beginRead(address);
+	status_reg = beginReadFirstByte(address);
 	endTransmission();
 	printf("Status Register:\n");
 
